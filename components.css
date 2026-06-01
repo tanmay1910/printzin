@@ -42,7 +42,7 @@
 .pz-catnav { background: var(--white); border-bottom: 1px solid var(--line); }
 .pz-catnav-in { display: flex; align-items: center; gap: 4px; height: 50px; overflow-x: auto; }
 .pz-catlink { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--r-pill);
-  font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; transition: all .15s; }
+  font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; flex-shrink: 0; transition: all .15s; }
 .pz-catlink:hover { background: var(--peach); color: var(--coral-deep); }
 .pz-catlink.active { background: var(--ink); color: #fff; }
 .pz-catlink svg { color: var(--amber); }
