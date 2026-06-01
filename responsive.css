@@ -1,0 +1,240 @@
+/* ============================================================
+   PRINTZIN — Mobile responsive layer
+   Loaded LAST so it overrides desktop layouts on small screens.
+   Breakpoints: 900 (tablet) · 720 (large phone) · 600 · 480 · 380
+   ============================================================ */
+
+/* prevent any stray horizontal scroll on phones */
+html, body { overflow-x: hidden; }
+* { min-width: 0; }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+@media (max-width: 720px) {
+  :root { --header-h: auto; }
+
+  /* --- top promo strip: keep it to one tidy centred line --- */
+  .pz-topstrip-in {
+    justify-content: center;
+    gap: 16px;
+    height: auto;
+    padding: 7px 0;
+    font-size: 12px;
+    text-align: center;
+  }
+  .pz-topstrip-in > span:first-child { display: none; }   /* gift tagline */
+
+  /* --- main bar: logo + actions on row 1, search wraps to row 2 --- */
+  .pz-mainbar { padding: 12px 0; }
+  .pz-mainbar-in { flex-wrap: wrap; gap: 12px 10px; }
+  .pz-logo { order: 1; }
+  .pz-actions { order: 2; margin-left: auto; gap: 2px; }
+  .pz-search {
+    order: 3;
+    flex: 1 0 100%;
+    height: 46px;
+    padding: 0 6px 0 14px;
+  }
+  .pz-search input { font-size: 14px; }
+  .pz-search-btn { padding: 0 16px; height: 36px; font-size: 13px; }
+
+  .pz-act { padding: 6px 8px; font-size: 11px; }
+  .pz-act span { white-space: nowrap; }
+
+  /* --- category nav: comfortable horizontal scroll --- */
+  .pz-catnav-in { height: 46px; gap: 2px; }
+  .pz-catlink { padding: 8px 13px; font-size: 13.5px; }
+}
+
+@media (max-width: 600px) {
+  .wrap { padding: 0 16px; }
+}
+
+@media (max-width: 520px) {
+  /* icon-only actions so the logo + 3 icons always fit one row */
+  .pz-act span { display: none; }
+  .pz-act { padding: 7px; }
+  .pz-logo-mark { width: 38px; height: 38px; border-radius: 11px; }
+  .pz-logo-txt { font-size: 22px; }
+}
+
+@media (max-width: 480px) {
+  .pz-topstrip-mid { display: none; }   /* leave only the help phone line */
+  .pz-topstrip-in { font-size: 11.5px; }
+}
+
+@media (max-width: 380px) {
+  .wrap { padding: 0 13px; }
+}
+
+/* ============================================================
+   HOME — hero
+   ============================================================ */
+@media (max-width: 900px) {
+  .pz-section { margin-top: 48px; }
+  .pz-hero { padding: 40px 0 48px; }
+  .pz-hero-copy h1 { margin: 18px 0 16px; }
+}
+
+@media (max-width: 560px) {
+  .pz-section { margin-top: 40px; }
+  .pz-sec-head { margin-bottom: 20px; gap: 12px; }
+
+  .pz-hero { padding: 30px 0 40px; }
+  .pz-hero-copy > p { font-size: 16px; }
+  .pz-hero-cta { gap: 10px; margin: 22px 0 24px; }
+  .pz-hero-cta .btn { flex: 1 1 100%; }
+  .pz-hero-trust { gap: 14px; }
+  .pz-hero-trust strong { font-size: 19px; }
+  .pz-hero-sep { height: 28px; }
+
+  /* shrink the decorative card collage so it never overflows */
+  .pz-hero-art { height: 300px; }
+  .pz-hc1 { width: 200px; left: 6%; }
+  .pz-hc2 { width: 140px; right: 4%; }
+  .pz-hc3 { width: 132px; right: 14%; }
+}
+
+@media (max-width: 380px) {
+  .pz-hero-trust strong { font-size: 17px; }
+  .pz-hero-trust span { font-size: 11.5px; }
+  .pz-hero-art { height: 250px; }
+  .pz-hc1 { width: 168px; }
+  .pz-hc2 { width: 120px; }
+  .pz-hc3 { width: 112px; }
+}
+
+/* ============================================================
+   HOME — value strip / categories / banners / offers / testimonials
+   ============================================================ */
+@media (max-width: 560px) {
+  .pz-values { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+  .pz-value-ic { width: 40px; height: 40px; }
+  .pz-value strong { font-size: 14px; }
+  .pz-value span { font-size: 12px; }
+
+  .pz-cats { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pz-cat { padding: 18px 16px; }
+  .pz-cat-art { width: 60px; height: 60px; margin-bottom: 12px; }
+
+  .pz-personalise-banner { padding: 28px 22px; border-radius: var(--r-lg); }
+  .pz-steps { gap: 14px; margin-bottom: 24px; }
+
+  .pz-offer { gap: 14px; }
+  .pz-offer-side { padding: 28px 24px; }
+  .pz-offer-side h3 { font-size: 24px; }
+
+  .pz-testis { gap: 14px; }
+  .pz-testi { padding: 22px; }
+}
+
+@media (max-width: 420px) {
+  .pz-values { grid-template-columns: 1fr; }
+  .pz-cats { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+@media (max-width: 560px) {
+  .pz-footer { margin-top: 56px; padding: 40px 0 24px; }
+  .pz-footer-top { grid-template-columns: 1fr; gap: 26px; padding-bottom: 28px; }
+  .pz-footer-brand p { max-width: none; }
+  .pz-footer-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+/* ============================================================
+   LISTING / SHOP
+   ============================================================ */
+@media (max-width: 600px) {
+  .pz-cat-banner { padding: 26px 22px; border-radius: var(--r-lg); }
+  .pz-shop-head { gap: 12px; }
+  .pz-shop-title { font-size: 22px; }
+  /* filter panel reads better above the grid on phones */
+  .pz-filters { padding: 16px; }
+}
+
+/* ============================================================
+   PRODUCT DETAIL
+   ============================================================ */
+@media (max-width: 600px) {
+  .pz-pdp-top { gap: 22px; }
+  /* gallery thumbs below the main image on phones */
+  .pz-gallery { grid-template-columns: 1fr; }
+  .pz-gallery-thumbs {
+    flex-direction: row;
+    order: 2;
+    overflow-x: auto;
+  }
+  .pz-thumb { flex: 0 0 64px; }
+  .pz-gallery-main { order: 1; }
+
+  .pz-pdp-now { font-size: 32px; }
+  .pz-pdp-price { gap: 10px; flex-wrap: wrap; }
+
+  .pz-buybar { flex-wrap: wrap; }
+  .pz-buybar .btn-primary { flex: 1 1 100%; order: 3; }
+  .pz-deliver-pin { max-width: none; }
+  .pz-tab { padding: 14px 14px; font-size: 14px; }
+}
+
+/* ============================================================
+   CART
+   ============================================================ */
+@media (max-width: 480px) {
+  .pz-cline { padding: 12px; gap: 12px; }
+  .pz-cline-img { width: 84px; height: 84px; }
+  .pz-cline-name { font-size: 15px; }
+  .pz-cline-price strong { font-size: 17px; }
+}
+
+/* ============================================================
+   CHECKOUT / RAZORPAY / CONFIRM
+   ============================================================ */
+@media (max-width: 600px) {
+  .pz-co-card { padding: 18px; }
+  .pz-co-step h3 { font-size: 17px; }
+
+  .pz-confirm { padding: 28px 0 16px; }
+  .pz-confirm-card { padding: 28px 20px; }
+  .pz-confirm-card h1 { font-size: 26px; }
+  .pz-confirm-meta { flex-direction: column; gap: 14px; padding: 16px; }
+  .pz-confirm-meta > div + div { border-left: none; border-top: 1px solid var(--line); padding-top: 14px; }
+  .pz-confirm-track { overflow-x: auto; gap: 12px; }
+  .pz-track-step { min-width: 64px; }
+  .pz-confirm-cta { flex-direction: column; }
+  .pz-confirm-cta .btn { width: 100%; }
+}
+
+/* ============================================================
+   AUTH / ACCOUNT
+   ============================================================ */
+@media (max-width: 600px) {
+  .pz-auth-form { padding: 28px 22px; }
+  .pz-account-head { padding: 18px; gap: 12px; }
+  .pz-account-av { width: 50px; height: 50px; font-size: 22px; }
+  .pz-account-head h1 { font-size: 22px; }
+  .pz-order-top { flex-wrap: wrap; gap: 6px; }
+}
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+@media (max-width: 600px) {
+  .pz-admin { padding: 28px 16px 60px; }
+  .pz-admin-head h1 { font-size: 26px; }
+  .pz-admin-grid { grid-template-columns: 1fr; }
+  .pz-admin-grid label.f2, .pz-admin-grid label.f3 { grid-column: span 1; }
+  .pz-admin-form { padding: 20px; }
+  .pz-admin-row { flex-wrap: wrap; }
+  .pz-admin-row-actions { width: 100%; justify-content: flex-end; }
+}
+
+/* ============================================================
+   Generic: large display buttons a touch smaller on phones
+   ============================================================ */
+@media (max-width: 480px) {
+  .btn-lg { padding: 15px 26px; font-size: 15.5px; }
+  .pz-page-title { font-size: 28px; }
+}
