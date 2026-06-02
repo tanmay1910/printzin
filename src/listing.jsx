@@ -151,7 +151,12 @@ const ShopPage = ({ mode }) => {
           <div>
             <span className="eyebrow" style={{ color: catObj.accent }}>{catObj.tag}</span>
             <h1>{catObj.name}</h1>
-            <p>Upload your photo, add a message — we print &amp; deliver across India.</p>
+            <p>{cat === 'corporate' ? 'Ready-to-brand gift sets, supplied by the master carton. Free logo branding on every piece.' : 'Upload your photo, add a message — we print & deliver across India.'}</p>
+            {cat === 'corporate' && (
+              <button className="btn btn-dark btn-sm" style={{ marginTop: 14 }} onClick={() => nav('corporate')}>
+                <Icon name="tag" size={15} /> MOQ &amp; how it works
+              </button>
+            )}
           </div>
           <ProductGlyph type={catObj.icon} size={120} color={catObj.accent} />
         </div>

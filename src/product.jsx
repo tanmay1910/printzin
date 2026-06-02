@@ -6,6 +6,7 @@ const ProductPage = () => {
   const cat = CATEGORIES.find(c => c.id === product.cat);
 
   const [color, setColor] = React.useState((product.colors||[])[0] || null);
+  const [vIdx, setVIdx] = React.useState(0);
   const [size, setSize] = React.useState((product.sizes||[])[0] || null);
   const [qty, setQty] = React.useState(1);
   const [photo, setPhoto] = React.useState(null);      // dataURL
@@ -22,8 +23,14 @@ const ProductPage = () => {
   React.useEffect(() => {
     window.scrollTo({ top: 0 });
     setColor((product.colors||[])[0]||null); setSize((product.sizes||[])[0]||null);
-    setQty(1); setPhoto(null); setPhotoName(''); setCustText(''); setMsg(''); setActiveImg(0); setPinResult(null);
+    setVIdx(0); setQty(product.corp ? product.moq : 1);
+    setPhoto(null); setPhotoName(''); setCustText(''); setMsg(''); setActiveImg(0); setPinResult(null);
   }, [product.id]);
+
+  const variants = product.variants || null;
+  const variant = variants ? variants[vIdx] : null;
+  const unitPrice = variant ? variant.price : product.price;
+  const imgProduct = variant ? { ...product, image: variant.img } : product;
 
   const onFile = (e) => {
     const f = e.target.files && e.target.files[0];
@@ -41,12 +48,14 @@ const ProductPage = () => {
     setPinResult({ ok: true, msg: sameDay ? 'Same-day delivery available 🎉' : 'Delivers in 2–4 days', sameDay });
   };
 
-  const buildPers = () => ({ photo, photoName, text: custext.trim(), message: msg.trim(), color, size });
+  const buildPers = () => ({ photo, photoName, text: custext.trim(), message: msg.trim(), color: variant ? variant.name : color, size, finish: variant ? variant.name : null });
 
   const handleAdd = (buy) => {
-    addToCart(product, buildPers(), qty);
+    let p = product;
+    if (product.corp && variant) p = { ...product, price: variant.price, name: product.name + ' — ' + variant.name };
+    addToCart(p, buildPers(), product.corp ? Math.max(qty, product.moq) : qty);
     if (buy) nav('cart');
-    else toast(`Added “${product.name}” to cart`);
+    else toast(`Added “${p.name}” to cart`);
   };
 
   const related = inCat(product.cat).filter(p => p.id !== product.id).slice(0, 4);
@@ -64,14 +73,18 @@ const ProductPage = () => {
         {/* GALLERY */}
         <div className="pz-gallery">
           <div className="pz-gallery-thumbs">
-            {[0,1,2,3].map(i => (
+            {variants ? variants.map((v, i) => (
+              <button key={v.code} className={'pz-thumb' + (vIdx===i?' on':'')} onClick={() => setVIdx(i)} title={v.name}>
+                <ProductImage product={{ ...product, image: v.img }} glyph={32} showHint={false} rounded={10} />
+              </button>
+            )) : [0,1,2,3].map(i => (
               <button key={i} className={'pz-thumb' + (activeImg===i?' on':'')} onClick={() => setActiveImg(i)}>
                 <ProductImage product={product} glyph={32} showHint={false} rounded={10} />
               </button>
             ))}
           </div>
           <div className="pz-gallery-main">
-            <ProductImage product={product} glyph={140} ratio="1 / 1" rounded={20} showHint={!photo} />
+            <ProductImage product={imgProduct} glyph={140} ratio="1 / 1" rounded={20} showHint={!photo && !product.corp} />
             {photo && (
               <div className="pz-photo-overlay">
                 <img src={photo} alt="your upload" />
@@ -87,7 +100,8 @@ const ProductPage = () => {
         <div className="pz-pdp-info">
           <div className="pz-pdp-tags">
             {product.badge && <span className={'badge ' + (product.badge==='Premium'?'badge-amber':product.badge==='New'?'badge-pink':'badge-coral')}>{product.badge}</span>}
-            <span className="badge badge-soft">{product.off}% off</span>
+            {product.corp && <span className="badge badge-soft">{product.moqGroup}</span>}
+            {!product.corp && <span className="badge badge-soft">{product.off}% off</span>}
           </div>
           <h1 className="pz-pdp-name">{product.name}</h1>
           <div className="pz-pdp-rate">
@@ -97,23 +111,55 @@ const ProductPage = () => {
             <span className="pz-pdp-sold">· 5k+ gifted</span>
           </div>
           <div className="pz-pdp-price">
-            <span className="pz-pdp-now">{fmt(product.price)}</span>
-            <span className="pz-pdp-mrp">{fmt(product.mrp)}</span>
-            <span className="pz-pdp-save">Save {fmt(product.mrp - product.price)}</span>
+            {product.poa ? (
+              <span className="pz-pdp-now">Price on request</span>
+            ) : (<>
+              <span className="pz-pdp-now">{product.priceFrom?'from ':''}{fmt(unitPrice)}</span>
+              {product.mrp > unitPrice && <span className="pz-pdp-mrp">{fmt(product.mrp)}</span>}
+              {product.mrp > unitPrice && <span className="pz-pdp-save">Save {fmt(product.mrp - unitPrice)}</span>}
+              {product.corp && <span className="pz-pdp-unit">/ piece</span>}
+            </>)}
           </div>
           <p className="pz-pdp-blurb">{product.blurb}</p>
 
-          {product.colors && product.colors.length > 1 && (
+          {variants && (
             <div className="pz-opt">
-              <label>Colour: <strong>{(COLORS.find(c=>c.id===color)||{}).name}</strong></label>
+              <label>Finish: <strong>{variant.name}</strong> <span className="pz-opt-code">({variant.code})</span></label>
               <div className="pz-swatches">
-                {product.colors.map(cid => {
-                  const c = COLORS.find(x=>x.id===cid)||{};
-                  return <button key={cid} className={'pz-swatch lg'+(color===cid?' on':'')} onClick={()=>setColor(cid)} title={c.name} style={{'--sw':c.hex}}><span style={{background:c.hex}}/></button>;
-                })}
+                {variants.map((v,i) => (
+                  <button key={v.code} className={'pz-swatch lg'+(vIdx===i?' on':'')} onClick={()=>setVIdx(i)} title={v.name} style={{'--sw':v.hex}}><span style={{background:v.hex}}/></button>
+                ))}
               </div>
             </div>
           )}
+
+          {product.corp && (
+            <div className="pz-moq-panel">
+              <div className="pz-moq-row">
+                <Icon name="tag" size={18} />
+                <div>
+                  <strong>Minimum order: {product.moq} pieces</strong>
+                  <span>Sold by the master carton · {product.moqGroup} · series {product.series}</span>
+                </div>
+              </div>
+              <div className="pz-moq-row">
+                <Icon name="sparkle" size={18} />
+                <div>
+                  <strong>Free logo branding</strong>
+                  <span>Add your company logo — UV print, engraving or screen print on every piece.</span>
+                </div>
+              </div>
+              {!product.poa && (
+                <div className="pz-moq-total">
+                  <span>Indicative order value</span>
+                  <strong>{fmt(unitPrice * Math.max(qty, product.moq))}</strong>
+                  <em>{Math.max(qty, product.moq)} × {fmt(unitPrice)}</em>
+                </div>
+              )}
+              <button className="pz-moq-link" onClick={()=>nav('corporate')}>View all MOQs &amp; how corporate gifting works <Icon name="chevron" size={13} /></button>
+            </div>
+          )}
+
 
           {product.sizes && (
             <div className="pz-opt">
@@ -163,14 +209,14 @@ const ProductPage = () => {
           {/* QTY + ACTIONS */}
           <div className="pz-buybar">
             <div className="pz-qty">
-              <button onClick={() => setQty(q => Math.max(1, q-1))}><Icon name="minus" size={16} stroke={2.6}/></button>
-              <span>{qty}</span>
-              <button onClick={() => setQty(q => q+1)}><Icon name="plus" size={16} stroke={2.6}/></button>
+              <button onClick={() => setQty(q => Math.max(product.corp ? product.moq : 1, q - (product.corp ? 5 : 1)))}><Icon name="minus" size={16} stroke={2.6}/></button>
+              <span>{product.corp ? Math.max(qty, product.moq) : qty}</span>
+              <button onClick={() => setQty(q => Math.max(product.corp?product.moq:1, q) + (product.corp ? 5 : 1))}><Icon name="plus" size={16} stroke={2.6}/></button>
             </div>
-            <button className="btn btn-primary btn-lg" style={{flex:1}} onClick={() => handleAdd(false)}><Icon name="cart" size={18}/> Add to cart</button>
+            <button className="btn btn-primary btn-lg" style={{flex:1}} onClick={() => handleAdd(false)}><Icon name="cart" size={18}/> {product.poa ? 'Add to enquiry' : 'Add to cart'}</button>
             <button className="pz-wish-lg" onClick={() => toggleWish(product.id)}><Icon name="heart" size={20} style={{fill: wished?'var(--coral)':'none', color:'var(--coral)'}}/></button>
           </div>
-          <button className="btn btn-dark btn-lg btn-block" style={{marginTop:10}} onClick={() => handleAdd(true)}>Buy now</button>
+          <button className="btn btn-dark btn-lg btn-block" style={{marginTop:10}} onClick={() => handleAdd(true)}>{product.poa ? 'Request a quote' : (product.corp ? 'Order this set' : 'Buy now')}</button>
 
           {/* DELIVERY */}
           <div className="pz-deliver">
@@ -197,9 +243,11 @@ const ProductPage = () => {
           ))}
         </div>
         <div className="pz-tab-body">
-          {tab==='desc' && <p>{product.blurb} Each {product.name.toLowerCase()} is made to order in our studio using high-resolution UV printing for rich, long-lasting colour. Your uploaded photo and message are placed exactly as previewed, then quality-checked before dispatch.</p>}
-          {tab==='care' && <p>Premium materials built to last. Hand-wash recommended for printed surfaces; avoid abrasive scrubbers. Prints are fade-resistant and safe for everyday use. Tees are 100% combed cotton, pre-shrunk.</p>}
-          {tab==='ship' && <p>Same-day delivery available in metro cities for orders placed before 3 PM. Standard delivery in 2–4 days nationwide. Because each gift is personalised, returns are accepted only for damage or print defects — we'll reprint and reship free of charge.</p>}
+          {tab==='desc' && (product.corp
+            ? <p>{product.blurb} Supplied as a complete gift set in retail-ready packaging, with a minimum order of {product.moq} pieces ({product.moqGroup}, series {product.series}). Every piece can be branded with your company logo using UV printing, laser engraving or screen printing. Lead time is typically 7–12 working days after artwork approval.</p>
+            : <p>{product.blurb} Each {product.name.toLowerCase()} is made to order in our studio using high-resolution UV printing for rich, long-lasting colour. Your uploaded photo and message are placed exactly as previewed, then quality-checked before dispatch.</p>)}
+          {tab==='care' && <p>{product.corp ? 'Durable, premium materials chosen for daily corporate use — steel, PU leather, bamboo and cork. Branding is fade-resistant and dishwasher-safe on drinkware where noted.' : 'Premium materials built to last. Hand-wash recommended for printed surfaces; avoid abrasive scrubbers. Prints are fade-resistant and safe for everyday use. Tees are 100% combed cotton, pre-shrunk.'}</p>}
+          {tab==='ship' && <p>{product.corp ? 'Bulk corporate orders ship in 7–12 working days after artwork approval. Pan-India delivery with carton-wise packing. GST invoice provided. Returns accepted only for manufacturing or print defects.' : 'Same-day delivery available in metro cities for orders placed before 3 PM. Standard delivery in 2–4 days nationwide. Because each gift is personalised, returns are accepted only for damage or print defects — we\u2019ll reprint and reship free of charge.'}</p>}
         </div>
       </div>
 

@@ -71,21 +71,37 @@ const ProductCard = ({ product }) => {
         {product.personalizable && (
           <span className="pz-personalize-tag"><Icon name="sparkle" size={13} /> Personalise</span>
         )}
+        {product.corp && (
+          <span className="pz-personalize-tag pz-brand-tag"><Icon name="sparkle" size={13} /> Add your logo</span>
+        )}
       </div>
       <div className="pz-card-body">
         <h4 className="pz-card-name">{product.name}</h4>
-        <div className="pz-card-rate">
-          <Stars value={product.rating} size={12} />
-          <span>{product.rating.toFixed(1)}</span>
-          <span className="pz-card-rev">({product.reviews})</span>
-        </div>
+        {product.corp ? (
+          <div className="pz-card-rate">
+            <span className="pz-moq-chip"><Icon name="tag" size={12} /> MOQ {product.moq} pcs</span>
+            {product.variants && product.variants.length > 1 && <span className="pz-card-rev">· {product.variants.length} finishes</span>}
+          </div>
+        ) : (
+          <div className="pz-card-rate">
+            <Stars value={product.rating} size={12} />
+            <span>{product.rating.toFixed(1)}</span>
+            <span className="pz-card-rev">({product.reviews})</span>
+          </div>
+        )}
         <div className="pz-card-foot">
           <div className="pz-price">
-            <span className="pz-price-now">{fmt(product.price)}</span>
-            <span className="pz-price-mrp">{fmt(product.mrp)}</span>
+            {product.poa ? (
+              <span className="pz-price-now pz-price-poa">Price on request</span>
+            ) : (
+              <>
+                <span className="pz-price-now">{product.priceFrom ? 'from ' : ''}{fmt(product.price)}</span>
+                {product.mrp > product.price && <span className="pz-price-mrp">{fmt(product.mrp)}</span>}
+              </>
+            )}
           </div>
-          <button className="pz-card-add" onClick={(e) => { e.stopPropagation(); addToCart(product, {}, 1); }}>
-            <Icon name="plus" size={16} stroke={2.6} /> Add
+          <button className="pz-card-add" onClick={(e) => { e.stopPropagation(); product.corp ? nav('product', { id: product.id }) : addToCart(product, {}, 1); }}>
+            <Icon name="plus" size={16} stroke={2.6} /> {product.corp ? 'View' : 'Add'}
           </button>
         </div>
       </div>
@@ -145,8 +161,8 @@ const Header = () => {
           <button className={'pz-catlink' + (view.name === 'home' ? ' active' : '')} onClick={() => nav('home')}>
             <Icon name="sparkle" size={15} /> All Gifts
           </button>
-          {CATEGORIES.map(c => (
-            <button key={c.id} className={'pz-catlink' + (view.params?.cat === c.id ? ' active' : '')} onClick={() => nav('listing', { cat: c.id })}>
+          {[...CATEGORIES].sort((a, b) => (a.id === 'corporate' ? -1 : b.id === 'corporate' ? 1 : 0)).map(c => (
+            <button key={c.id} className={'pz-catlink' + (c.id === 'corporate' ? ' pz-catlink-corp' : '') + (view.params?.cat === c.id ? ' active' : '')} onClick={() => nav('listing', { cat: c.id })}>
               {c.name}
             </button>
           ))}
@@ -184,7 +200,7 @@ const Footer = () => {
             <h5>Company</h5>
             <a href="#" onClick={(e)=>{e.preventDefault();nav('about');}}>About Printzin</a>
             <a href="#" onClick={e=>e.preventDefault()}>How printing works</a>
-            <a href="#" onClick={e=>e.preventDefault()}>Bulk & corporate</a>
+            <a href="#" onClick={(e)=>{e.preventDefault();nav('corporate');}}>Bulk &amp; corporate</a>
             <a href="#" onClick={e=>e.preventDefault()}>Careers</a>
           </div>
           <div className="pz-footer-col">
@@ -198,7 +214,6 @@ const Footer = () => {
         <div className="pz-footer-bottom">
           <span>© 2026 Printzin Gifting Solution. Made with <Icon name="heart" size={12} style={{fill:'var(--coral)',stroke:'var(--coral)'}}/> in India.</span>
           <span className="pz-footer-pay">Secure payments by <strong>Razorpay</strong> · UPI · Cards · Netbanking</span>
-          <a href="#" className="pz-footer-admin" onClick={(e)=>{e.preventDefault();nav('admin');}}>Admin</a>
         </div>
       </div>
     </footer>
