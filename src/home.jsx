@@ -1,6 +1,6 @@
 /* PRINTZIN — Home page */
 const HomePage = () => {
-  const { nav } = usePZ();
+  const { nav, tweaks } = usePZ();
   const { CATEGORIES, PRODUCTS } = window.PZ_DATA;
   const bestsellers = PRODUCTS.filter(p => p.bestseller).slice(0, 8);
   const trending = PRODUCTS.filter(p => p.badge === 'Trending' || p.badge === 'New').slice(0, 4);
@@ -16,7 +16,7 @@ const HomePage = () => {
             <p>Upload a photo, add a message, and we'll print it onto mugs, frames, tees &amp; more — beautifully made and delivered across India.</p>
             <div className="pz-hero-cta">
               <button className="btn btn-primary btn-lg" onClick={() => nav('listing', { cat: 'mugs' })}>Start personalising <Icon name="arrowRight" size={18} /></button>
-              <button className="btn btn-ghost btn-lg" onClick={() => nav('listing', { cat: 'combos' })}>Shop combos</button>
+              <button className="btn btn-ghost btn-lg" onClick={() => nav('listing', { cat: 'corporate' })}>Shop corporate gifts</button>
             </div>
             <div className="pz-hero-trust">
               <div><strong>4.8★</strong><span>12k+ reviews</span></div>
@@ -72,13 +72,24 @@ const HomePage = () => {
           <button className="pz-seeall" onClick={() => nav('listing', { cat: 'mugs' })}>View all <Icon name="chevron" size={16} /></button>
         </div>
         <div className="pz-cats">
-          {CATEGORIES.map(c => (
+          {(() => {
+            // Tweak: which category fills the showcase slot. Corporate Gifts replaces Photo Frames when selected.
+            const base = CATEGORIES.filter(c => c.id !== 'corporate');
+            const corp = CATEGORIES.find(c => c.id === 'corporate');
+            let cats = base;
+            if ((tweaks && tweaks.featuredCategory) === 'corporate' && corp) {
+              // Feature Corporate Gifts in the showcase slot while keeping Photo Frames in the grid.
+              cats = [];
+              base.forEach(c => { if (c.id === 'frames') cats.push(corp); cats.push(c); });
+            }
+            return cats.map(c => (
             <button key={c.id} className="pz-cat" onClick={() => nav('listing', { cat: c.id })} style={{ '--ct': c.tint, '--ca': c.accent }}>
               <div className="pz-cat-art"><ProductGlyph type={c.icon} size={56} color={c.accent} /></div>
               <strong>{c.name}</strong>
               <span>{c.tag}</span>
             </button>
-          ))}
+          ));
+          })()}
         </div>
       </section>
 

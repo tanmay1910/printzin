@@ -7,6 +7,12 @@ const LS = {
 };
 
 function App() {
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "featuredCategory": "corporate",
+    "accent": "#FF5A36"
+  }/*EDITMODE-END*/;
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
   const [view, setView] = useState(() => (window.location.hash === '#admin' ? { name: 'admin', params: {} } : { name: 'home', params: {} }));
   const [, setRev] = useState(0);
   const [cart, setCart] = useState(() => LS.get('cart', []));
@@ -32,6 +38,12 @@ function App() {
   useEffect(() => LS.set('wish', wishlist), [wishlist]);
   useEffect(() => LS.set('user', user), [user]);
   useEffect(() => LS.set('orders', orders), [orders]);
+
+  // Tweaks: live brand accent
+  useEffect(() => {
+    const r = document.documentElement;
+    if (tweaks.accent) { r.style.setProperty('--coral', tweaks.accent); r.style.setProperty('--sh-coral', '0 12px 30px ' + tweaks.accent + '55'); }
+  }, [tweaks.accent]);
 
   const nav = useCallback((name, params = {}) => {
     setView({ name, params });
@@ -105,7 +117,7 @@ function App() {
   const ctx = {
     view, nav, cart, cartCount, wishlist, user, orders, lastOrder, query, setQuery, totals,
     addToCart, setQty, removeItem, toggleWish, login, logout, placeOrder, toast,
-    coupon, setCoupon, applyCoupon, couponMsg,
+    coupon, setCoupon, applyCoupon, couponMsg, tweaks,
   };
 
   // inject coupon controls into cart summary via context override
@@ -113,7 +125,7 @@ function App() {
     home: window.HomePage, listing: () => <window.ShopPage mode="listing" />, search: () => <window.ShopPage mode="search" />,
     product: window.ProductPage, cart: window.CartPageWrapped, checkout: window.CheckoutPage, confirm: window.ConfirmPage,
     auth: window.AuthPage, wishlist: window.WishlistPage, account: window.AccountPage,
-    admin: window.AdminPage, contact: window.ContactPage, about: window.AboutPage,
+    admin: window.AdminPage, contact: window.ContactPage, about: window.AboutPage, corporate: window.CorporatePage,
   };
   const Page = pages[view.name] || window.HomePage;
 
@@ -125,6 +137,16 @@ function App() {
       </main>
       <Footer />
       {toastMsg && <div className="pz-toast"><Icon name="check" size={18} stroke={3} />{toastMsg}</div>}
+      <TweaksPanel>
+        <TweakSection label="Home page" />
+        <TweakRadio label="Featured slot" value={tweaks.featuredCategory}
+          options={[{ value: 'frames', label: 'Photo Frames' }, { value: 'corporate', label: 'Corporate Gifts' }]}
+          onChange={(v) => setTweak('featuredCategory', v)} />
+        <TweakSection label="Brand" />
+        <TweakColor label="Accent" value={tweaks.accent}
+          options={['#FF5A36', '#37507A', '#1F9D5B', '#C2185B']}
+          onChange={(v) => setTweak('accent', v)} />
+      </TweaksPanel>
     </window.PZContext.Provider>
   );
 }
