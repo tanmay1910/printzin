@@ -1,0 +1,316 @@
+/* PRINTZIN — app shell, routing, cart & state */
+const {
+  useState,
+  useEffect,
+  useCallback
+} = React;
+const LS = {
+  get: (k, d) => {
+    try {
+      const v = localStorage.getItem('pz_' + k);
+      return v ? JSON.parse(v) : d;
+    } catch {
+      return d;
+    }
+  },
+  set: (k, v) => {
+    try {
+      localStorage.setItem('pz_' + k, JSON.stringify(v));
+    } catch {}
+  }
+};
+function App() {
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "featuredCategory": "corporate",
+    "accent": "#FF5A36"
+  } /*EDITMODE-END*/;
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [view, setView] = useState(() => window.location.hash === '#admin' ? {
+    name: 'admin',
+    params: {}
+  } : {
+    name: 'home',
+    params: {}
+  });
+  const [, setRev] = useState(0);
+  const [cart, setCart] = useState(() => LS.get('cart', []));
+  const [wishlist, setWishlist] = useState(() => LS.get('wish', []));
+  const [user, setUser] = useState(() => LS.get('user', null));
+  const [orders, setOrders] = useState(() => LS.get('orders', []));
+  const [lastOrder, setLastOrder] = useState(null);
+  const [query, setQuery] = useState('');
+  const [coupon, setCoupon] = useState('');
+  const [couponMsg, setCouponMsg] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [toastMsg, setToastMsg] = useState(null);
+
+  // expose a global re-render hook so the Supabase loader / admin can refresh the catalog
+  useEffect(() => {
+    window.__pzRefresh = () => setRev(r => r + 1);
+    const onHash = () => {
+      if (window.location.hash === '#admin') setView({
+        name: 'admin',
+        params: {}
+      });
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      delete window.__pzRefresh;
+    };
+  }, []);
+  useEffect(() => LS.set('cart', cart), [cart]);
+  useEffect(() => LS.set('wish', wishlist), [wishlist]);
+  useEffect(() => LS.set('user', user), [user]);
+  useEffect(() => LS.set('orders', orders), [orders]);
+
+  // Tweaks: live brand accent
+  useEffect(() => {
+    const r = document.documentElement;
+    if (tweaks.accent) {
+      r.style.setProperty('--coral', tweaks.accent);
+      r.style.setProperty('--sh-coral', '0 12px 30px ' + tweaks.accent + '55');
+    }
+  }, [tweaks.accent]);
+  const nav = useCallback((name, params = {}) => {
+    setView({
+      name,
+      params
+    });
+    if (name === 'search') setQuery(params.q || '');
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    });
+  }, []);
+  const toast = useCallback(msg => {
+    setToastMsg(msg);
+    clearTimeout(window.__pzToast);
+    window.__pzToast = setTimeout(() => setToastMsg(null), 2400);
+  }, []);
+  const addToCart = useCallback((product, pers = {}, qty = 1) => {
+    const key = product.id + '|' + (pers.color || '') + '|' + (pers.size || '') + '|' + (pers.photoName || '') + '|' + (pers.text || '');
+    setCart(c => {
+      const ex = c.find(i => i.key === key);
+      if (ex) return c.map(i => i.key === key ? {
+        ...i,
+        qty: i.qty + qty
+      } : i);
+      return [...c, {
+        key,
+        product,
+        pers,
+        qty
+      }];
+    });
+    toast(`Added “${product.name}” to cart`);
+  }, [toast]);
+  const setQty = useCallback((key, q) => {
+    if (q <= 0) {
+      setCart(c => c.filter(i => i.key !== key));
+      return;
+    }
+    setCart(c => c.map(i => i.key === key ? {
+      ...i,
+      qty: q
+    } : i));
+  }, []);
+  const removeItem = useCallback(key => setCart(c => c.filter(i => i.key !== key)), []);
+  const toggleWish = useCallback(id => setWishlist(w => w.includes(id) ? w.filter(x => x !== id) : [...w, id]), []);
+  const login = useCallback(u => setUser(u), []);
+  const logout = useCallback(() => setUser(null), []);
+  const applyCoupon = useCallback(() => {
+    const code = coupon.trim().toUpperCase();
+    if (!code) return;
+    if (code === 'PRINTZIN10') {
+      setAppliedCoupon({
+        code,
+        pct: 10
+      });
+      setCouponMsg({
+        ok: true,
+        text: '🎉 10% off applied!'
+      });
+    } else if (code === 'GIFT50') {
+      setAppliedCoupon({
+        code,
+        flat: 50
+      });
+      setCouponMsg({
+        ok: true,
+        text: '₹50 off applied!'
+      });
+    } else {
+      setAppliedCoupon(null);
+      setCouponMsg({
+        ok: false,
+        text: 'Invalid coupon code'
+      });
+    }
+  }, [coupon]);
+
+  // totals
+  const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+  const mrpTotal = cart.reduce((s, i) => s + i.product.mrp * i.qty, 0);
+  const discount = mrpTotal - subtotal;
+  let couponAmt = 0;
+  if (appliedCoupon) couponAmt = appliedCoupon.pct ? Math.round(subtotal * appliedCoupon.pct / 100) : appliedCoupon.flat || 0;
+  const afterCoupon = subtotal - couponAmt;
+  const delivery = afterCoupon >= 599 ? 0 : afterCoupon > 0 ? 49 : 0;
+  const totals = {
+    subtotal,
+    discount,
+    coupon: couponAmt,
+    delivery,
+    deliverySaved: afterCoupon >= 599 ? 49 : 0,
+    total: afterCoupon + delivery
+  };
+  const placeOrder = useCallback(details => {
+    const id = 'PZ' + Math.floor(100000 + Math.random() * 899999);
+    const order = {
+      id,
+      items: cart,
+      total: details.total,
+      address: details.address,
+      slot: details.slot,
+      date: new Date().toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      })
+    };
+    setOrders(o => [order, ...o]);
+    setLastOrder(order);
+    setCart([]);
+    setAppliedCoupon(null);
+    setCoupon('');
+    setCouponMsg(null);
+    return order;
+  }, [cart]);
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const ctx = {
+    view,
+    nav,
+    cart,
+    cartCount,
+    wishlist,
+    user,
+    orders,
+    lastOrder,
+    query,
+    setQuery,
+    totals,
+    addToCart,
+    setQty,
+    removeItem,
+    toggleWish,
+    login,
+    logout,
+    placeOrder,
+    toast,
+    coupon,
+    setCoupon,
+    applyCoupon,
+    couponMsg,
+    tweaks
+  };
+
+  // inject coupon controls into cart summary via context override
+  const pages = {
+    home: window.HomePage,
+    listing: () => /*#__PURE__*/React.createElement(window.ShopPage, {
+      mode: "listing"
+    }),
+    search: () => /*#__PURE__*/React.createElement(window.ShopPage, {
+      mode: "search"
+    }),
+    product: window.ProductPage,
+    cart: window.CartPageWrapped,
+    checkout: window.CheckoutPage,
+    confirm: window.ConfirmPage,
+    auth: window.AuthPage,
+    wishlist: window.WishlistPage,
+    account: window.AccountPage,
+    admin: window.AdminPage,
+    contact: window.ContactPage,
+    about: window.AboutPage,
+    corporate: window.CorporatePage
+  };
+  const Page = pages[view.name] || window.HomePage;
+  return /*#__PURE__*/React.createElement(window.PZContext.Provider, {
+    value: ctx
+  }, /*#__PURE__*/React.createElement(Header, null), /*#__PURE__*/React.createElement("main", {
+    className: "pz-main"
+  }, /*#__PURE__*/React.createElement(Page, null)), /*#__PURE__*/React.createElement(Footer, null), toastMsg && /*#__PURE__*/React.createElement("div", {
+    className: "pz-toast"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 18,
+    stroke: 3
+  }), toastMsg), /*#__PURE__*/React.createElement(TweaksPanel, null, /*#__PURE__*/React.createElement(TweakSection, {
+    label: "Home page"
+  }), /*#__PURE__*/React.createElement(TweakRadio, {
+    label: "Featured slot",
+    value: tweaks.featuredCategory,
+    options: [{
+      value: 'frames',
+      label: 'Photo Frames'
+    }, {
+      value: 'corporate',
+      label: 'Corporate Gifts'
+    }],
+    onChange: v => setTweak('featuredCategory', v)
+  }), /*#__PURE__*/React.createElement(TweakSection, {
+    label: "Brand"
+  }), /*#__PURE__*/React.createElement(TweakColor, {
+    label: "Accent",
+    value: tweaks.accent,
+    options: ['#FF5A36', '#37507A', '#1F9D5B', '#C2185B'],
+    onChange: v => setTweak('accent', v)
+  })));
+}
+
+// Cart page needs coupon controls — wrap to pass coupon state from context
+window.CartPageWrapped = function () {
+  const ctx = usePZ();
+  const {
+    cart,
+    nav,
+    totals,
+    coupon,
+    setCoupon,
+    applyCoupon,
+    couponMsg
+  } = ctx;
+  if (cart.length === 0) return /*#__PURE__*/React.createElement(window.CartPage, null);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wrap pz-cartpage fade-in"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "pz-page-title"
+  }, "Your cart ", /*#__PURE__*/React.createElement("span", null, "(", cart.reduce((s, i) => s + i.qty, 0), " items)")), /*#__PURE__*/React.createElement("div", {
+    className: "pz-cart-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "pz-cart-lines"
+  }, cart.map(it => /*#__PURE__*/React.createElement(window.CartLineExport, {
+    key: it.key,
+    item: it
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "pz-cart-continue",
+    onClick: () => nav('home')
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chevron",
+    size: 15,
+    style: {
+      transform: 'rotate(180deg)'
+    }
+  }), " Continue shopping")), /*#__PURE__*/React.createElement(window.OrderSummary, {
+    totals: totals,
+    cta: "Proceed to checkout",
+    onCta: () => nav('checkout'),
+    coupon: coupon,
+    setCoupon: setCoupon,
+    applyCoupon: applyCoupon,
+    couponMsg: couponMsg
+  })));
+};
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));

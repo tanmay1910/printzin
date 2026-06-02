@@ -5,8 +5,23 @@ Your store now has an **admin panel** for adding/editing products online. It wor
 - **Demo mode** (default, no setup): the admin panel works, but changes live only in your browser. Good for trying it out.
 - **Live mode** (after the steps below): a real login + database, so products you add show up for **every visitor**, permanently.
 
-You reach the admin panel at the **"Admin"** link in the website footer, or by adding **`#admin`** to the URL
+You reach the admin panel by adding **`#admin`** to the URL
 (e.g. `https://yourname.github.io/your-repo/#admin`).
+
+---
+
+## Performance / how the code is built (read before editing)
+
+For fast loading **on mobile**, the site ships **precompiled**: the JSX source in
+`/src/*.jsx` (plus `tweaks-panel.jsx`) is compiled to plain JavaScript in **`/js/*.js`**,
+which is what `index.html` actually loads — alongside **production React**. There is **no
+in-browser Babel**, so phones don't transpile code on every visit.
+
+- **To run/publish:** just serve the folder as-is. Nothing to build.
+- **To edit the UI:** change the matching file in `/src` (e.g. `src/home.jsx`), then
+  recompile it to `/js` (e.g. `js/home.js`). Any Babel "react" preset does this, e.g.
+  `npx babel src/home.jsx -o js/home.js --presets @babel/preset-react`.
+  The `/src` files are kept only as editable source — the browser never loads them.
 
 ---
 
